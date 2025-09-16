@@ -58,6 +58,32 @@ def handler(event, context):
                 "body": json.dumps({"error": str(e)})
             }
 
+    elif route == "/contact" and method == "GET":
+        try:
+            # Scanner toute la table pour récupérer tous les contacts
+            response = table.scan()
+            contacts = response['Items']
+            
+            # Gérer la pagination si nécessaire (DynamoDB limite à 1MB par scan)
+            while 'LastEvaluatedKey' in response:
+                response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+                contacts.extend(response['Items'])
+            
+            return {
+                "statusCode": 200,
+                "headers": {"Content-Type": "application/json"},
+                "body": json.dumps({
+                    "contacts": contacts,
+                    "count": len(contacts)
+                }, cls=DecimalEncoder)
+            }
+        except Exception as e:
+            return {
+                "statusCode": 500,
+                "headers": {"Content-Type": "application/json"},
+                "body": json.dumps({"error": str(e)})
+            }
+
     else:
         return {
             "statusCode": 404,
